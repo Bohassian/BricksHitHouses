@@ -1,0 +1,17 @@
+@font-face {
+  font-family: "Future";
+  src: url("../fonts/Outrun future.otf");
+}
+@font-face {
+  font-family: "Future Bold";
+  src: url("../fonts/Outrun future Bold.otf");
+}
+@font-face {
+  font-family: "Future Bold Italic";
+  src: url("../fonts/Outrun future Bold Italic.otf")
+}
+
+@font-face {
+  font-family: "Arcade Classic";
+  src: url("../fonts/ARCADECLASSIC.TTF")
+}

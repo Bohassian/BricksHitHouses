@@ -1,0 +1,569 @@
+<!doctype html>
+<html>
+
+<head>
+  <title>Bricks Hit Houses</title>
+  <link rel="stylesheet" type="text/css" href="./css/game.css">
+</head>
+
+<body onload="main()" onkeydown="keydown(event)" onKeyUp="keyup(event)" style="background-color:lightgray">
+  <canvas width="640" height="480" id="canv" onmousedown="mousedown(event)" onmouseup="mouseup(event)" onmousemove="mousemove(event)"
+    onwheel="wheel(event)"></canvas>    
+
+  <!-- Game Engine Code -->
+  <script src="./Vector2.js"></script>
+  <script src="./Transform.js"></script>
+  <script src="./GameObject.js"></script>
+  
+
+
+  <script src="./eventHandler.js"></script>
+
+  <script src="./guiSupport.js"></script>
+
+  <script src="./titleStateHandler.js"></script>
+  <script src="./loadStateHandler.js"></script>
+  <script src="./runStateHandler.js"></script>
+  <script src="./endStateHandler.js"></script>
+
+  <script src="./updateStateHandler.js"></script>
+
+
+  <script>
+    //Basic initialization code.
+    
+    //Handle the scenes state machine
+    var state;            //State variable that tracks my current scene    
+
+    //A set of states we can be in, where each state represents a scene
+    var TITLE_STATE = 1;  //The opening scene, which displays the title of our game
+    var LOAD_STATE = 2;   //The load scene, which shows a loading progreess bar
+    var RUN_STATE = 3;    //The main scene, where the game runs
+    var END_STATE = 4;    //An end state, which the user sees which the game ends
+
+    //Set our intital scene state to the title state
+    state = RUN_STATE; 
+    
+    var Time = {}                                 //Stores information about time that is available to our game
+    var msBetweenFrames = 1000/30;                //Time in milliseconds between frames
+    Time.deltaTime = msBetweenFrames/1000;        //Time in seconds between frames.
+
+    //Setup the canvas variables
+    var width = 640;
+    var height = 480;
+    var canvas = document.getElementById("canv");
+    var ctx = canvas.getContext("2d");
+
+    canvas.width = width;
+    canvas.height = height;
+
+    function main() {
+      updateStateHandler();                 //Load the current scene in our state machine
+      setInterval(timer, msBetweenFrames);  //Start the main timer to be called 30 times a second (every 33.3ms)
+    }
+  </script>
+
+  <!-- <template id="titleTemplate">
+    <div class="screen title-screen">
+      <div class="title-wrapper">
+          Bricks Hit Houses
+      </div>
+    </div>
+    <div>
+      <button onclick="update({name:'next'})">Next</button>
+    </div>
+  </template>
+
+  <template id="loadTemplate">
+    <div class="screen">
+      <div>Load Template</div>
+    </div>
+    <div>
+      <button onclick="update({name:'next'})">Next</button>
+    </div>
+  </template>
+
+  <template id="runTemplate">
+    <div class="screen">
+      <canvas width="640" height="480" id="canv" onkeydown="keydown(event)" onKeyUp="keyup(event)" onmousedown="mousedown(event)" onmouseup="mouseup(event)" onmousemove="mousemove(event)" onwheel="wheel(event)"></canvas>
+    </div>
+    <div>
+      <button onclick="update({name:'next'})">Next</button>
+    </div>
+  </template>
+
+  <template id="endTemplate">
+    <div class="screen">
+      <div>End Template</div>
+    </div>
+    <div>
+      <button onclick="update({name:'next'})">Next</button>
+    </div>
+  </template>
+
+  <div id="templateHere"></div>
+
+  <script>
+    //View Code
+
+    var titleTemplate, loadTemplate, runTemplate, endTemplate;
+    var templateHere;
+
+    function updateView() {
+      //Get initial values as needed
+      if (!titleTemplate)
+        titleTemplate = document.getElementById("titleTemplate");
+      if (!loadTemplate)
+        loadTemplate = document.getElementById("loadTemplate");
+      if (!runTemplate)
+        runTemplate = document.getElementById("runTemplate");
+      if (!endTemplate)
+        endTemplate = document.getElementById("endTemplate");
+      if (!templateHere)
+        templateHere = document.getElementById("templateHere");
+
+      var clone;
+      if (state == TITLE_STATE) {
+        clone = titleTemplate.content.cloneNode(true);
+      } else if (state == LOAD_STATE) {
+        var clone = loadTemplate.content.cloneNode(true);
+      } else if (state == RUN_STATE) {
+        var clone = runTemplate.content.cloneNode(true);
+      } else if (state == END_STATE) {
+        var clone = endTemplate.content.cloneNode(true);
+      } else {
+        return console.log("ERROR: Couldn't match state " + state);
+      }
+
+      templateHere.innerHTML = "";
+      templateHere.appendChild(clone);
+    }
+
+  </script>
+
+  <script>
+    //Controls
+
+    // Three different kinds of keyboard input you might want
+    // Distinct key presses -> KeyUp
+    // Mimic OS with repeating keys -> KeyDown
+    // Continuous movement ->  keyDown -> Update an array of boolean values indicating the key is down
+    // Check the array in your update function based on the timer
+    // keyUp -> set key to false
+
+    function keydown(e){
+      console.log(e.ctrlKey)
+      if (e.key == "a")
+      {
+        update({ name: "startMoveLeft"});
+      }
+      if (e.key == "d")
+      {
+        update({ name: "startMoveRight" });
+      }
+      if (e.key == "w")
+      {
+        update({ name: "startMoveUp" });
+      }
+      if (e.key == "s")
+      {
+        update({ name: "startMoveDown" })
+      }
+      console.log("keydown");
+    }
+
+    function keyup(e){
+      if (e.key == "a")
+      {
+        update({ name: "stopMoveLeft" });
+      }
+      if (e.key == "d")
+      {
+        update({ name: "stopMoveRight" });
+      }
+      if (e.key == "w")
+      {
+        update({ name: "stopMoveUp" });
+      }
+      if (e.key == "s")
+      {
+        update({ name: "stopMoveDown" });
+      }
+      console.log("keyup");
+
+    }
+
+    function mousedown(e){
+      console.log(e.clientX)
+      if (e.button == 0)
+      {
+        update({ name: "moveLeft" });
+      }
+      if (e.button == 2)
+      {
+        update({ name: "moveRight" });
+      }
+      
+      console.log("mousedown");
+    }
+    function mouseup(e){
+      console.log("mouseup");
+    }
+    function mousemove(e){
+      console.log(event.offsetX);
+      console.log("mousemove");
+    }
+    
+    function wheel(e){
+      console.log(e.deltaY);
+      if (e.deltaY > 0)
+      {
+        update({ name: "moveLeft"});
+      }
+      if (e.deltaY < 0)
+      {
+        update({ name: "moveRight" });
+      }
+      console.log("mousewheel");
+    }
+
+    
+
+    function main() {
+      setInterval(timer, 1000 / 30);
+      updateView();
+    }
+
+    var updateListeners = [];
+
+    function timer() {
+      update({ name: "timer" })
+    }
+
+    function update(event) {
+      for (let i = 0; i < updateListeners.length; i++) {
+        updateListeners[i].eventPump(event);
+      }
+    }
+
+  </script>
+
+
+
+
+  <script>
+    //Model code
+
+
+
+    //A variable that has my state
+    //JS is dynamcially typed
+    var state;
+    var stateHandler;
+
+
+    //A set of states we can be in
+    var TITLE_STATE = 1;
+    var LOAD_STATE = 2;
+    var RUN_STATE = 3;
+    var END_STATE = 4;
+
+    //Set our intital state
+    state = TITLE_STATE;
+
+    var titleStateHandler = {
+      start() {
+        updateListeners.push(this);
+      },
+      eventPump(event) {
+        switch (event.name) {
+          case "next":
+            state = LOAD_STATE;
+            updateListeners.splice(updateListeners.indexOf(this), 1);
+            updateStateHandler();
+            break;
+          case "timer":
+            // this.update();
+            break;
+        }
+      }
+      // update() {
+      //   this.canvas = document.getElementById("canv");
+      //   this.ctx = this.canvas.getContext("2d");
+      //   this.width = 640;
+      //   this.height = 480;
+      //   this.canvas.width = this.width;
+      //   this.canvas.height = this.height;
+
+      //   let ctx = this.ctx;
+
+      //   ctx.save();
+      //   {
+      //     ctx.translate(this.width / 2, this.height / 2 );
+      //     ctx.rotate(-Math.PI/4);
+      //     ctx.font = "80px Future Bold Italic";
+      //     ctx.fillText("Bricks",-200,-80,640);
+      //     ctx.fillText("Hit", -100,0,640);
+      //     ctx.fillText("Houses", -50,80,640);
+      //   }
+        
+      //   // ctx.fillStyle = "blue";
+      //   // ctx.fillRect(0, 0, this.width, this.height);
+
+      //   // ctx.style.fontFam
+      // }
+    };
+
+    var loadStateHandler = {
+      start() {
+        updateListeners.push(this);
+      },
+      eventPump(event) {
+        switch (event.name) {
+          case "next":
+            state = RUN_STATE;
+            updateListeners.splice(updateListeners.indexOf(this), 1);
+            updateStateHandler();
+            break;
+        }
+      }
+    };
+
+    var runStateHandler = {
+      start() {
+        updateListeners.push(this);
+        // Initialize Key Array for continuous movement
+        this.keys = [false, false, false, false]; // 0 = "w"; 1 = "a"; 2 = "s"; 3 = "d"
+        // Initialize Player
+        this.playerX = -300;
+        this.playerY = 10;
+      },
+      eventPump(event) {
+        switch (event.name) {
+          case "next":
+            state = END_STATE;
+            updateListeners.splice(updateListeners.indexOf(this), 1);
+            updateStateHandler();
+            break;
+          case "timer":
+            this.update();
+            break;
+          case "startMoveLeft":
+            this.keys[1] = true;
+            break;
+          case "startMoveRight":
+            this.keys[3] = true;
+            break;
+          case "startMoveUp":
+            this.keys[0] = true;
+            break;
+          case "startMoveDown":
+            this.keys[2] = true;
+            break;
+          case "stopMoveLeft" :
+            this.keys[1] = false;
+            break;
+          case "stopMoveRight" :
+            this.keys[3] = false;
+            break;
+          case "stopMoveUp" :
+            this.keys[0] = false;
+            break;
+          case "stopMoveDown" :
+            this.keys[2] = false;
+            break;
+        }
+      },
+      update() {
+        //Continuous Movement Checks
+        if (this.keys[0]) 
+        {
+          this.playerY -= 5;
+        }
+        if (this.keys[1])
+        {
+          this.playerX -= 5;
+        }
+        if (this.keys[2])
+        {
+          this.playerY += 5;
+        }
+        if (this.keys[3])
+        {
+          this.playerX += 5;
+        }
+
+        this.canvas = document.getElementById("canv");
+        this.ctx = this.canvas.getContext("2d");
+        this.width = 640;
+        this.height = 480;
+        this.canvas.width = this.width;
+        this.canvas.height = this.height;
+
+        let ctx = this.ctx;
+
+        ctx.fillStyle = "blue";
+        ctx.fillRect(0, 0, this.width, this.height);
+
+
+        
+        //Here's the pattern
+        //You translate then (scale and rotate) a camera (move from screen space into world space)
+        //You translate then (scale and rotate) objects to place them in the world (move from camera space into world space)
+        //You translate then (scale an rotate) child objects to place them relative their parents (move from world space to child space)
+        
+        //There has to be a direct chain of camera->world->parent->child(->child...) transforms to properly place an object.
+        //To do this, we use a stack. Any time we move down in our hierarchy, 
+        //we push the current state of the transform onto this stack (ctx.save).
+        //Whenever we move up in our hierarchy, we pop the current state off the stack (ctx.restore).
+
+
+        //You (scale and rotate) then translate an object to place it relative to its parent.
+        //You (scale and rotate) then translate an object without a parent to place it in the world.
+        //You (scale and rotate) then translate the world to have a camera looking at it.
+        
+        //In code, you do this backwards.
+
+
+        // 3 things we can do
+        // Scale -> Make things bigger or smaller. Scale < 1 shrinks, > 1 inflates.
+        // Rotate -> Rotate
+        // Translate -> Move
+
+
+
+
+
+        ctx.save() //Save here so we can add children to the screen (another camera or a GUI)
+        {
+          //Often you want start with the camera pointed at (0,0). 
+          ctx.translate(this.width / 2, this.height / 2 );
+
+          //Any additional translate will make the camera pan.
+          //You can do this with two translate calls or combine them into one call.
+          //ctx.translate(x,y);
+
+          //This zooms the camera
+          // ctx.scale(100, 100);
+
+          //Any additional scale will make the camera zoom in or out.
+          //You can do this with two scale calls or combine them into one call.
+          //ctx.scale(zoomX, zoomY);
+
+          //You can also rotate the camera. This will "shake" the camera.
+          //ctx.rotate(cameraRotation)
+          
+
+          //At this point we are in world space within a camera.
+
+
+
+          ctx.save() //Save so we can add other objects to the world.
+          {
+            //Sky background
+            var gradient = ctx.createRadialGradient(0,0,0,0,-240,360);
+            gradient.addColorStop(0, "#F54040");
+            gradient.addColorStop(1, "purple");
+            ctx.fillStyle = gradient;
+            ctx.fillRect(-320, -240, this.width, this.height/2);
+
+            //Street foreground
+            ctx.fillStyle = "grey";
+            ctx.fillRect(-320, 0, this.width, this.height/2);
+
+            ctx.save();//Save so we can add children to the background/foreground
+            {
+              //Add Player
+              ctx.fillStyle = "black";
+              ctx.fillRect(this.playerX, this.playerY, .1 * this.width, .3 * this.height);              
+
+              //Put the car in position relative to the truck
+              // ctx.translate(1, -1);
+              // ctx.scale(.5, .5);
+
+              //Draw the car
+              
+              ctx.restore();//Restore so we can add another child to the car if we want to
+            }
+            ctx.restore(); //Restore so we can add another child to the truck if we want to
+          }
+          ctx.restore(); //Restore we can add other children to the world
+        }
+        //-----------------------------------------------------------------------------
+        // Time to add our GUI
+        // If your GUI seems scaled, rotated, or translated, 
+        // make sure you have a ctx.restore for every ctx.save.
+        // if not, you have effectively made your GUI a child of an object in the world :)
+        // ----------------------------------------------------------------------------
+
+        // var rDimensions = this.positionGUI(this.width, this.height, .25, 20, .25)
+
+        // ctx.fillStyle = "rgba(255, 255, 255, .9)"
+
+        // ctx.fillRect(0, 0, 100, 100);
+
+        // ctx.fillRect(rDimensions.x,
+        //   rDimensions.y,
+        //   rDimensions.width,
+        //   rDimensions.height);
+
+
+      },
+      positionGUI(canvWidth, canvHeight, xDistance, yDistance, height) {
+        var toReturn = {
+          x: 0,
+          y: 0,
+          width: 0,
+          height: 0
+        }
+        var xIsBigger = true;
+        if (canvHeight > canvWidth) xIsBigger = false;
+        var clippingUnit = xIsBigger ? canvHeight / 2 : canvWidth / 2;
+        toReturn.x = xDistance * clippingUnit;
+        toReturn.y = canvHeight - (yDistance + height * clippingUnit)
+        toReturn.width = canvWidth - (2 * (xDistance * clippingUnit));
+        toReturn.height = height * clippingUnit;
+        return toReturn;
+      }
+    };
+
+    var endStateHandler = {
+      start() {
+        updateListeners.push(this);
+      },
+      eventPump(event) {
+        switch (event.name) {
+          case "next":
+            state = TITLE_STATE;
+            updateListeners.splice(updateListeners.indexOf(this), 1);
+            updateStateHandler();
+            break;
+        }
+      }
+    };
+
+
+
+
+
+    updateStateHandler();
+
+    function updateStateHandler() {
+      if (state == TITLE_STATE) {
+        stateHandler = titleStateHandler;
+      } else if (state == LOAD_STATE) {
+        stateHandler = loadStateHandler;
+      } else if (state == RUN_STATE) {
+        stateHandler = runStateHandler;
+      } else if (state == END_STATE) {
+        stateHandler = endStateHandler;
+      }
+
+
+      updateView();
+      stateHandler.start();
+    }
+  </script> -->
+</body>
+
+</html>
